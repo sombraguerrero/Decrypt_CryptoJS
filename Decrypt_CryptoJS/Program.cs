@@ -6,17 +6,23 @@ using System.Net.Mime;
 
 try
 {
+    string cipherTextIn;
     WebClient client = new WebClient();
+    client.Headers.Add(HttpRequestHeader.ContentType, MediaTypeNames.Text.Plain);
     const int saltLabelLength = 8;
     byte[] myKey;
     byte[] myVector;
     byte[] mySalt = new byte[saltLabelLength];
-
     // Base64-encoded ciphertext that contains the string "Salted__" at the beginning followed by the 8 byte salt and the actual ciphertext.
-    Console.Write("Enter text to encrypt: ");
-    string textIn = Console.ReadLine();
-    client.Headers.Add(HttpRequestHeader.ContentType, MediaTypeNames.Text.Plain);
-    string cipherTextIn = client.UploadString(@"http://settersynology:9843/encrypt", textIn);
+    if (args.Length == 1 && args[0].ToLower().Equals("-cin"))
+    {
+        Console.Write("Enter text to encrypt: ");
+        cipherTextIn = client.UploadString(@"http://settersynology:9843/encrypt", Console.ReadLine());
+    }
+    else
+    {
+        cipherTextIn = client.DownloadString("http://settersynology:9843/encrypt");
+    }
     Console.WriteLine("Encrypted text: " + cipherTextIn);
     byte[] objectIn = Convert.FromBase64String(cipherTextIn);
     int cipherTextLength = objectIn.Length - 16;

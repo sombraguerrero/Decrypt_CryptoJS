@@ -1,16 +1,25 @@
 const myConsts = require('./webhooks/myConstants.js');
-const AES = require("crypto-js/aes");
+const cjs = require('crypto-js');
 const http = require('http');
+const LoremIpsum = require("lorem-ipsum").LoremIpsum;
+
+const lorem = new LoremIpsum({
+  sentencesPerParagraph: {
+    max: 8,
+    min: 4
+  },
+  wordsPerSentence: {
+    max: 16,
+    min: 4
+  }
+});
 
 http.createServer(function (req, res) {
 	helpMsg = "Valid endpoints:\r\nPOST /encrypt\r\nRequest body should be in plain text.";
 	textIn = '';
-	
 	try
 	{
-		req.on("data", (chunk) => {
-			textIn += chunk;
-		});
+		req.on("data", (chunk) => { textIn += chunk; });
 		req.on("end", () => {
 			//console.log("Original text:\r\n" + textIn);
 			if (req.method == "POST" && req.headers['content-type'] == "text/plain")
@@ -19,7 +28,14 @@ http.createServer(function (req, res) {
 				if (req.url == "/encrypt")
 				{
 					res.writeHead(200, {'Transfer-Encoding':'chunked','Content-Type': 'text/plain'});
-					res.write(AES.encrypt(textIn, myConsts.PASSPHRASE).toString());
+					res.write(cjs.AES.encrypt(textIn, myConsts.PASSPHRASE).toString());
+					res.end();
+					//console.log(res);
+				}
+				else if (req.url == "/decrypt")
+				{
+					res.writeHead(200, {'Transfer-Encoding':'chunked','Content-Type': 'text/plain'});
+					res.write(cjs.AES.decrypt(textIn, myConsts.PASSPHRASE).toString(cjs.enc.Utf8));
 					res.end();
 					//console.log(res);
 				}
@@ -29,6 +45,16 @@ http.createServer(function (req, res) {
 					res.write(helpMsg);
 					res.end();
 					
+				}
+			}
+			else if (req.method == "GET" && req.headers['content-type'] == "text/plain")
+			{
+				if (req.url == "/encrypt")
+				{
+					textIn = lorem.generateParagraphs(1);
+					res.writeHead(200, {'Transfer-Encoding':'chunked','Content-Type': 'text/plain'});
+					res.write(cjs.AES.encrypt(textIn, myConsts.PASSPHRASE).toString());
+					res.end();
 				}
 			}
 			else if (req.headers['content-type'] != "text/plain")
