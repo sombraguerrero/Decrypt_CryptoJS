@@ -7,8 +7,6 @@ using System.Net.Mime;
 try
 {
     string cipherTextIn;
-    WebClient client = new WebClient();
-    client.Headers.Add(HttpRequestHeader.ContentType, MediaTypeNames.Text.Plain);
     const int saltLabelLength = 8;
     byte[] myKey;
     byte[] myVector;
@@ -17,11 +15,15 @@ try
     if (args.Length == 1 && args[0].ToLower().Equals("-cin"))
     {
         Console.Write("Enter text to encrypt: ");
-        cipherTextIn = client.UploadString(@"http://settersynology:9843/encrypt", Console.ReadLine());
+        Task<string> postString = UploadString(@"http://settersynology:9843/encrypt", Console.ReadLine());
+        postString.Wait();
+        cipherTextIn = postString.Result;
     }
     else
     {
-        cipherTextIn = client.DownloadString("http://settersynology:9843/encrypt");
+        Task<string> getString = DownloadString(@"http://settersynology:9843/encrypt");
+        getString.Wait();
+        cipherTextIn = getString.Result;
     }
     Console.WriteLine("Encrypted text: " + cipherTextIn);
     byte[] objectIn = Convert.FromBase64String(cipherTextIn);
@@ -53,6 +55,40 @@ catch (Exception ex)
     Console.Error.WriteLine(ex.Message);
 }
 Console.ReadKey();
+
+static async Task<string> UploadString(string dest, string data)
+{
+    StringContent content = new StringContent(data);
+    content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(MediaTypeNames.Text.Plain);
+    HttpClient httpClient = new HttpClient();
+    HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Post, dest);
+    httpRequest.Content = content;
+    HttpResponseMessage response = await httpClient.SendAsync(httpRequest);
+    httpClient.Dispose();
+    try
+    {
+        return (await response.EnsureSuccessStatusCode().Content.ReadAsStringAsync());
+    }
+    catch (HttpRequestException ex)
+    {
+        return $"{ex.Message}{Environment.NewLine}From: {ex.Source}";
+    }
+}
+
+static async Task<string> DownloadString(string dest)
+{
+    HttpClient httpClient = new HttpClient();
+    //httpClient.Dispose();
+    HttpResponseMessage response = await httpClient.GetAsync(dest);
+    try
+    {
+        return (await response.EnsureSuccessStatusCode().Content.ReadAsStringAsync());
+    }
+    catch (HttpRequestException ex)
+    {
+        return $"{ex.Message}{Environment.NewLine}From: {ex.Source}";
+    }
+}
 
 static string DecryptStringFromBytes_Aes(byte[] cipherText, byte[] Key, byte[] IV)
 {
