@@ -15,7 +15,7 @@ const lorem = new LoremIpsum({
 });
 
 http.createServer(function (req, res) {
-	helpMsg = "Valid endpoints:\r\nPOST /encrypt\r\nRequest body should be in plain text.";
+	helpMsg = "Valid endpoints:\r\nPOST /encrypt\r\nPOST /decrypt\r\nGET /encrypt\r\nGET accepts plaintext. POSTS expect plaintext body.";
 	textIn = '';
 	try
 	{
@@ -47,7 +47,7 @@ http.createServer(function (req, res) {
 					
 				}
 			}
-			else if (req.method == "GET")
+			else if (req.method == "GET" && req.headers['accept'] == 'text/plain')
 			{
 				if (req.url == "/encrypt")
 				{
@@ -57,14 +57,12 @@ http.createServer(function (req, res) {
 					res.end();
 				}
 			}
-			/** Cannot enforce this against a .NET process that uses HttpClient because in strict enforcement of REST standards, it will not allow Content-Type to be set on GET
-			else if (req.headers['content-type'] != "text/plain")
+			else if (req.headers['Accept'] != "text/plain")
 			{
 				res.writeHead(415, {'Content-Type': 'text/plain'});
 				res.write(helpMsg);
 				res.end();
 			}
-			**/
 			else
 			{
 				res.writeHead(405, {'Content-Type': 'text/plain'});

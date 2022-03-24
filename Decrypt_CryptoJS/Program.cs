@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using System.Security.Cryptography;
 using System.Collections;
-using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Mime;
 
 try
@@ -59,7 +59,7 @@ Console.ReadKey();
 static async Task<string> UploadString(string dest, string data)
 {
     StringContent content = new StringContent(data);
-    content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(MediaTypeNames.Text.Plain);
+    content.Headers.ContentType = new MediaTypeHeaderValue(MediaTypeNames.Text.Plain);
     HttpClient httpClient = new HttpClient();
     HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Post, dest);
     httpRequest.Content = content;
@@ -78,8 +78,10 @@ static async Task<string> UploadString(string dest, string data)
 static async Task<string> DownloadString(string dest)
 {
     HttpClient httpClient = new HttpClient();
-    //httpClient.Dispose();
-    HttpResponseMessage response = await httpClient.GetAsync(dest);
+    HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Get, dest);
+    httpRequest.Headers.Accept.Clear();
+    httpRequest.Headers.Add("Accept", MediaTypeNames.Text.Plain);
+    HttpResponseMessage response = await httpClient.SendAsync(httpRequest);
     try
     {
         return (await response.EnsureSuccessStatusCode().Content.ReadAsStringAsync());
