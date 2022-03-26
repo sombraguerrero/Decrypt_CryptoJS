@@ -12,12 +12,17 @@ try
     byte[] myVector;
     byte[] mySalt = new byte[saltLabelLength];
     // Base64-encoded ciphertext that contains the string "Salted__" at the beginning followed by the 8 byte salt and the actual ciphertext.
-    if (args.Length == 1 && args[0].ToLower().Equals("-cin"))
+    if (args.Length == 1 && args[0].ToLower().Equals("-e"))
     {
         Console.Write("Enter text to encrypt: ");
         Task<string> postString = UploadString(@"http://settersynology:9843/encrypt", Console.ReadLine());
         postString.Wait();
         cipherTextIn = postString.Result;
+    }
+    else if (args.Length == 1 && args[0].ToLower().Equals("-d"))
+    {
+        Console.Write("Enter text to decrypt: ");
+        cipherTextIn = Console.ReadLine();
     }
     else
     {
