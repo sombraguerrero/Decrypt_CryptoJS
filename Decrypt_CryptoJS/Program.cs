@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 using System.Collections;
 using System.Net.Http.Headers;
 using System.Net.Mime;
+using System.Resources;
+using System.Reflection;
 
 try
 {
@@ -11,6 +13,8 @@ try
     byte[] myKey;
     byte[] myVector;
     byte[] mySalt = new byte[saltLabelLength];
+    ResourceManager manager = new ResourceManager("Decrypt_CryptoJS.Properties.Resources", Assembly.GetExecutingAssembly());
+    string pwd = manager.GetString("pass");
     // Base64-encoded ciphertext that contains the string "Salted__" at the beginning followed by the 8 byte salt and the actual ciphertext.
     if (args.Length == 1 && args[0].ToLower().Equals("-e"))
     {
@@ -21,6 +25,12 @@ try
     }
     else if (args.Length == 1 && args[0].ToLower().Equals("-d"))
     {
+        Console.Write("Enter text to decrypt: ");
+        cipherTextIn = Console.ReadLine();
+    }
+    else if (args.Length == 1 && args[0].ToLower().StartsWith("--decryptpwd="))
+    {
+        pwd = args[0].Substring(args[0].IndexOf('=') + 1);
         Console.Write("Enter text to decrypt: ");
         cipherTextIn = Console.ReadLine();
     }
@@ -45,8 +55,8 @@ try
     {
         //Console.WriteLine($"Label: {Encoding.UTF8.GetString(saltedLabel)}\r\nCipher Text: {Encoding.UTF8.GetString(cipherText)}\r\n Salt: {Encoding.UTF8.GetString(mySalt)}");
         //File.WriteAllText("log.txt", $"Label[{saltedLabel.Length}]: {Encoding.UTF8.GetString(saltedLabel)}\r\nCipher Text[{cipherText.Length}]: {Encoding.UTF8.GetString(cipherText)}\r\n Salt[{mySalt.Length}]: {Encoding.UTF8.GetString(mySalt)}");
-        System.Resources.ResourceManager manager = new System.Resources.ResourceManager("Decrypt_CryptoJS.Properties.Resources", System.Reflection.Assembly.GetExecutingAssembly());
-        DeriveKeyAndIV(manager.GetString("pass"), out myKey, out myVector, mySalt);
+        
+        DeriveKeyAndIV(pwd, out myKey, out myVector, mySalt);
         string finalText = DecryptStringFromBytes_Aes(cipherText, myKey, myVector);
         Console.WriteLine("Decrypted Text: " + finalText);
     }
