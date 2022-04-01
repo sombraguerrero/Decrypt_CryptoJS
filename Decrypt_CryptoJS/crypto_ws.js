@@ -17,62 +17,71 @@ const lorem = new LoremIpsum({
 http.createServer(function (req, res) {
 	helpMsg = "Valid endpoints:\r\nPOST /encrypt\r\nPOST /decrypt\r\nGET /encrypt\r\nGET accepts plaintext. POSTS expect plaintext body.";
 	textIn = '';
+	pwdIn = req.headers['x-crypto-pass'] != null ? req.headers['x-crypto-pass'] : myConsts.PASSPHRASE;
 	try
 	{
 		req.on("data", (chunk) => { textIn += chunk; });
 		req.on("end", () => {
-			//console.log("Original text:\r\n" + textIn);
-			if (req.method == "POST" && req.headers['content-type'] == "text/plain")
+			try
 			{
-				//console.log(req);
-				if (req.url == "/encrypt")
+				//console.log("Original text:\r\n" + textIn);
+				if (req.method == "POST" && req.headers['content-type'] == "text/plain")
 				{
-					res.writeHead(200, {'Transfer-Encoding':'chunked','Content-Type': 'text/plain'});
-					res.write(cjs.AES.encrypt(textIn, myConsts.PASSPHRASE).toString());
-					res.end();
-					//console.log(res);
+					//console.log(req);
+					if (req.url == "/encrypt")
+					{
+						res.writeHead(200, {'Transfer-Encoding':'chunked','Content-Type': 'text/plain'});
+						res.write(cjs.AES.encrypt(textIn, pwdIn).toString());
+						res.end();
+						//console.log(res);
+					}
+					else if (req.url == "/decrypt")
+					{
+						res.writeHead(200, {'Transfer-Encoding':'chunked','Content-Type': 'text/plain'});
+						res.write(cjs.AES.decrypt(textIn, pwdIn).toString(cjs.enc.Utf8));
+						res.end();
+						//console.log(res);
+					}
+					else
+					{
+						res.writeHead(404, {'Content-Type': 'text/plain'});
+						res.write(helpMsg);
+						res.end();
+						
+					}
 				}
-				else if (req.url == "/decrypt")
+				else if (req.method == "GET" && req.headers['accept'] == 'text/plain')
 				{
-					res.writeHead(200, {'Transfer-Encoding':'chunked','Content-Type': 'text/plain'});
-					res.write(cjs.AES.decrypt(textIn, myConsts.PASSPHRASE).toString(cjs.enc.Utf8));
+					if (req.url == "/encrypt")
+					{
+						textIn = lorem.generateParagraphs(1);
+						res.writeHead(200, {'Transfer-Encoding':'chunked','Content-Type': 'text/plain'});
+						res.write(cjs.AES.encrypt(textIn, pwdIn).toString());
+						res.end();
+					}
+				}
+				else if (req.headers['Accept'] != "text/plain")
+				{
+					res.writeHead(415, {'Content-Type': 'text/plain'});
+					res.write(helpMsg);
 					res.end();
-					//console.log(res);
 				}
 				else
 				{
-					res.writeHead(404, {'Content-Type': 'text/plain'});
+					res.writeHead(405, {'Content-Type': 'text/plain'});
 					res.write(helpMsg);
 					res.end();
-					
 				}
 			}
-			else if (req.method == "GET" && req.headers['accept'] == 'text/plain')
-			{
-				if (req.url == "/encrypt")
-				{
-					textIn = lorem.generateParagraphs(1);
-					res.writeHead(200, {'Transfer-Encoding':'chunked','Content-Type': 'text/plain'});
-					res.write(cjs.AES.encrypt(textIn, myConsts.PASSPHRASE).toString());
-					res.end();
-				}
-			}
-			else if (req.headers['Accept'] != "text/plain")
-			{
-				res.writeHead(415, {'Content-Type': 'text/plain'});
-				res.write(helpMsg);
-				res.end();
-			}
-			else
-			{
-				res.writeHead(405, {'Content-Type': 'text/plain'});
-				res.write(helpMsg);
+			catch(e) {
+				res.writeHead(401, {'Content-Type': 'text/plain'});
+				res.write(`${e.message}: Password probably invalid!`);
 				res.end();
 			}
 		});
 	}
 	catch (e) {
-		console.error(e.message);
+		console.log(e.message);
 	}
 	
 	req.on('error', (e) => {

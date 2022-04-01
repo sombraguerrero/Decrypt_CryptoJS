@@ -23,6 +23,14 @@ try
         postString.Wait();
         cipherTextIn = postString.Result;
     }
+    else if (args.Length == 1 && args[0].ToLower().StartsWith("--encryptpwd="))
+    {
+        Console.Write("Enter text to encrypt: ");
+        pwd = args[0].Substring(args[0].IndexOf('=') + 1);
+        Task<string> postString = UploadString(@"http://settersynology:9843/encrypt", Console.ReadLine(), pwd);
+        postString.Wait();
+        cipherTextIn = postString.Result;
+    }
     else if (args.Length == 1 && args[0].ToLower().Equals("-d"))
     {
         Console.Write("Enter text to decrypt: ");
@@ -71,12 +79,14 @@ catch (Exception ex)
 }
 Console.ReadKey();
 
-static async Task<string> UploadString(string dest, string data)
+static async Task<string> UploadString(string dest, string data, string pass = null)
 {
     StringContent content = new StringContent(data);
     content.Headers.ContentType = new MediaTypeHeaderValue(MediaTypeNames.Text.Plain);
     HttpClient httpClient = new HttpClient();
     HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Post, dest);
+    if (pass != null)
+        httpRequest.Headers.Add("x-crypto-pass", pass);
     httpRequest.Content = content;
     HttpResponseMessage response = await httpClient.SendAsync(httpRequest);
     httpClient.Dispose();
