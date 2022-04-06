@@ -5,9 +5,13 @@ using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Resources;
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
 
 try
 {
+    IConfigurationRoot config = new ConfigurationBuilder()
+        .AddJsonFile("jsconfig.json")
+        .Build();
     string cipherTextIn;
     const int saltLabelLength = 8;
     byte[] myKey;
@@ -15,11 +19,13 @@ try
     byte[] mySalt = new byte[saltLabelLength];
     ResourceManager manager = new ResourceManager("Decrypt_CryptoJS.Properties.Resources", Assembly.GetExecutingAssembly());
     string pwd = manager.GetString("pass");
+    string host = config.GetRequiredSection("Settings")["rootUrl"];
+    int port =  int.Parse(config.GetRequiredSection("Settings")["port"]);
     // Base64-encoded ciphertext that contains the string "Salted__" at the beginning followed by the 8 byte salt and the actual ciphertext.
     if (args.Length == 1 && args[0].ToLower().Equals("-e"))
     {
         Console.Write("Enter text to encrypt: ");
-        Task<string> postString = UploadString(@"http://settersynology:9843/encrypt", Console.ReadLine());
+        Task<string> postString = UploadString($"{host}:{port}/encrypt", Console.ReadLine());
         postString.Wait();
         cipherTextIn = postString.Result;
     }
@@ -27,7 +33,7 @@ try
     {
         Console.Write("Enter text to encrypt: ");
         pwd = args[0].Substring(args[0].IndexOf('=') + 1);
-        Task<string> postString = UploadString(@"http://settersynology:9843/encrypt", Console.ReadLine(), pwd);
+        Task<string> postString = UploadString($"{host}:{port}/encrypt", Console.ReadLine(), pwd);
         postString.Wait();
         cipherTextIn = postString.Result;
     }
@@ -44,7 +50,7 @@ try
     }
     else
     {
-        Task<string> getString = DownloadString(@"http://settersynology:9843/encrypt");
+        Task<string> getString = DownloadString($"{host}:{port}/encrypt");
         getString.Wait();
         cipherTextIn = getString.Result;
     }
