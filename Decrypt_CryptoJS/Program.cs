@@ -48,11 +48,18 @@ try
         Console.Write("Enter text to decrypt: ");
         cipherTextIn = Console.ReadLine();
     }
-    else
+    else if (args.Length == 1 && args[0].ToLower().Equals("-li"))
     {
         Task<string> getString = DownloadString($"{host}:{port}/encrypt");
         getString.Wait();
         cipherTextIn = getString.Result;
+    }
+    else
+    {
+        Task<string> getString = DownloadString($"{host}:{port}/svs");
+        getString.Wait();
+        cipherTextIn = getString.Result;
+        pwd = "athenaroot";
     }
     Console.WriteLine("Encrypted text: " + cipherTextIn);
     byte[] objectIn = Convert.FromBase64String(cipherTextIn);
